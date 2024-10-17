@@ -3,12 +3,14 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const WebSocket = require("ws");
+var cors = require("cors");
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded());
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname));
+app.use(cors());
 
 const PORT = 3000;
 const ALERT_LOG_FILE = path.join(__dirname, "logs", "alert.log");
