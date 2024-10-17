@@ -9,7 +9,35 @@ import { useEffect, useState } from 'react';
 const IP = '192.168.1.5';
 
 export default function HomeScreen() {
-  const [logs, setLogs] = useState({ alives: [], alerts: [] });
+  const [logs, setLogs] = useState<{ alives: string[]; alerts: string[] }>({
+    alives: [],
+    alerts: [],
+  });
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
+  if (ws !== null) {
+    ws.onmessage = (e) => {
+      const log = JSON.parse(e.data) as {
+        type: 'alives' | 'alerts';
+        body: string;
+      };
+      console.log('New WebSocket message:', log);
+
+      if (log.type === 'alives') {
+        const newLogs = {
+          alives: [...logs.alives.slice(1), log.body],
+          alerts: logs.alerts,
+        };
+        setLogs(newLogs);
+      } else if (log.type === 'alerts') {
+        const newLogs = {
+          alives: logs.alives,
+          alerts: [...logs.alerts.slice(1), log.body],
+        };
+        setLogs(newLogs);
+      }
+    };
+  }
 
   useEffect(() => {
     (async () => {
@@ -18,6 +46,30 @@ export default function HomeScreen() {
       ).json();
       setLogs(newLogs);
     })();
+  }, []);
+
+  useEffect(() => {
+    const ws = new WebSocket(`ws://${IP}:3000`);
+    setWs(ws);
+
+    ws.onopen = () => {
+      console.log('WebSocket connection opened');
+    };
+
+    ws.onerror = (e) => {
+      console.error('WebSocket error: ', e);
+    };
+
+    ws.onclose = (e) => {
+      console.log('WebSocket closed: ', e.code, e.reason);
+    };
+
+    // cleanup the WebSocket connection when the component unmounts
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
   }, []);
 
   return (
