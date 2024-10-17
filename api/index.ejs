@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arduino Door Alert System — Logs</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        padding: 20px;
+        width: 50%;
+        margin: 0 auto;
+        padding-bottom: 2rem;
+      }
+      h1 {
+        text-align: center;
+      }
+      h2 {
+        margin-top: 3rem;
+      }
+      table {
+        margin: 0 auto;
+        border-collapse: collapse;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+      }
+      td {
+        width: 50%;
+      }
+      th,
+      td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+      }
+      th {
+        background-color: #504caf;
+        color: white;
+      }
+      tr:hover {
+        background-color: lightgray;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Arduino Door Alert System — Logs</h1>
+
+    <h2>Alives</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="alivesTableBody">
+        <% logs.alives.forEach((entry, index) => { %>
+        <tr>
+          <td><%= index + 1 %></td>
+          <td><%= entry %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <h2>Alerts</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="alertsTableBody">
+        <% logs.alerts.forEach((entry, index) => { %>
+        <tr>
+          <td><%= index + 1 %></td>
+          <td><%= entry %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <script>
+      const alerts = "<%= logs.alerts %>".split(",");
+      const alives = "<%= logs.alives %>".split(",");
+
+      const socket = new WebSocket("ws://localhost:3000");
+
+      socket.onopen = () => {
+        console.log("Connected to WebSocket server");
+      };
+
+      socket.onmessage = (event) => {
+        console.log(event);
+        const { type, body } = JSON.parse(event.data);
+
+        if (type === "alerts") {
+          alerts.push(body);
+          alerts.shift();
+          updateTable(type, alerts);
+        } else if (type === "alives") {
+          alives.push(body);
+          alives.shift();
+          updateTable(type, alives);
+        }
+      };
+
+      socket.onclose = () => {
+        console.log("Disconnected from WebSocket server");
+      };
+
+      function updateTable(tableId, entries) {
+        const tableBody = document.getElementById(tableId + "TableBody");
+        tableBody.innerHTML = "";
+
+        entries.forEach((entry, index) => {
+          const row = document.createElement("tr");
+          const numberCell = document.createElement("td");
+          const timestampCell = document.createElement("td");
+
+          numberCell.textContent = tableBody.children.length + 1;
+          timestampCell.textContent = entry;
+
+          row.appendChild(numberCell);
+          row.appendChild(timestampCell);
+
+          tableBody.appendChild(row);
+        });
+      }
+    </script>
+  </body>
+</html>
