@@ -18,18 +18,18 @@ export default function HomeScreen() {
   if (ws !== null) {
     ws.onmessage = (e) => {
       const log = JSON.parse(e.data) as {
-        type: 'alives' | 'alerts';
+        type: 'alive' | 'alert';
         body: string;
       };
       console.log('New WebSocket message:', log);
 
-      if (log.type === 'alives') {
+      if (log.type === 'alive') {
         const newLogs = {
           alives: [...logs.alives.slice(1), log.body],
           alerts: logs.alerts,
         };
         setLogs(newLogs);
-      } else if (log.type === 'alerts') {
+      } else if (log.type === 'alert') {
         const newLogs = {
           alives: logs.alives,
           alerts: [...logs.alerts.slice(1), log.body],

@@ -105,7 +105,7 @@ app.get("/alive", authenticate, (req, res) => {
     res.send("Alive signal logged successfully");
   });
 
-  broadcast({ type: "alives", body: currentTime });
+  broadcast({ type: "alive", body: currentTime });
 });
 
 // logs the current time to logs/alert.log
@@ -121,7 +121,7 @@ app.get("/alert", authenticate, (req, res) => {
     res.send("Alert logged successfully");
   });
 
-  broadcast({ type: "alerts", body: currentTime });
+  broadcast({ type: "alert", body: currentTime });
 });
 
 app.get("/test", (req, res) => {

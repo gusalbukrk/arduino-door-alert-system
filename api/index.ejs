@@ -95,11 +95,11 @@
         console.log(event);
         const { type, body } = JSON.parse(event.data);
 
-        if (type === "alerts") {
+        if (type === "alert") {
           alerts.push(body);
           alerts.shift();
           updateTable(type, alerts);
-        } else if (type === "alives") {
+        } else if (type === "alive") {
           alives.push(body);
           alives.shift();
           updateTable(type, alives);
