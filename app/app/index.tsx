@@ -1,14 +1,18 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useEffect, useState } from 'react';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const IP = '192.168.1.5';
 
 export default function HomeScreen() {
+  const { expoPushToken, notification } = usePushNotifications();
+  const data = JSON.stringify(notification, undefined, 2);
+
   const [logs, setLogs] = useState<{ alives: string[]; alerts: string[] }>({
     alives: [],
     alerts: [],
@@ -42,7 +46,7 @@ export default function HomeScreen() {
   useEffect(() => {
     (async () => {
       const newLogs = await (
-        await fetch(`http://${IP}:3000/?user=user&pass=pass&alertsLimit=20`)
+        await fetch(`http://${IP}:3000/?user=user&pass=pass&alertsLimit=5`)
       ).json();
       setLogs(newLogs);
     })();
@@ -83,6 +87,10 @@ export default function HomeScreen() {
         />
       }
     >
+      <View>
+        <ThemedText>Token: {expoPushToken?.data ?? ''}</ThemedText>
+        <ThemedText>Notification: {data}</ThemedText>
+      </View>
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
