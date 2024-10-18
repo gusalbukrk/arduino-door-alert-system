@@ -11,6 +11,7 @@ const IP = '192.168.1.5';
 
 export default function HomeScreen() {
   const { expoPushToken, notification } = usePushNotifications();
+  // console.log('ExpoPushToken', expoPushToken?.data);
   const data = JSON.stringify(notification, undefined, 2);
 
   const [logs, setLogs] = useState<{ alives: string[]; alerts: string[] }>({

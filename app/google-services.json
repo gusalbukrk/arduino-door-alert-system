@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "193471282966",
+    "project_id": "arduino-door-alert",
+    "storage_bucket": "arduino-door-alert.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:193471282966:android:c04489a8b4dea2d4331a37",
+        "android_client_info": {
+          "package_name": "com.gusalbukrk.arduinodooralert"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzZ_-Iaf34C9yET-EdIEWSrEe8Sbrw5V4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

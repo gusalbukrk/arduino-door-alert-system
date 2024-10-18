@@ -33,19 +33,19 @@ export const usePushNotifications = (): PushNotificationState => {
   const responseListener = useRef<Notifications.Subscription>();
 
   // for testing purposes, schedule local notifications to see if everything is working properly
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (count === 3) return;
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     if (count === 3) return;
 
-      console.log('pushing notification');
-      schedulePushNotification();
-      count++;
-    }, 5000);
+  //     console.log('pushing notification');
+  //     schedulePushNotification();
+  //     count++;
+  //   }, 5000);
 
-    return () => {
-      clearInterval(interval);
-    };
-  });
+  //   return () => {
+  //     clearInterval(interval);
+  //   };
+  // });
 
   useEffect(() => {
     registerForPushNotificationsAsync().then((token) => {
