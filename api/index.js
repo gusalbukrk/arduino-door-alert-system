@@ -3,7 +3,8 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const WebSocket = require("ws");
-var cors = require("cors");
+const cors = require("cors");
+const { Expo } = require("expo-server-sdk");
 
 const app = express();
 app.use(express.json());
@@ -39,6 +40,41 @@ function broadcast(obj) {
       client.send(JSON.stringify(obj));
     }
   });
+}
+
+// Expo push notifications
+let expo = new Expo();
+const pushToken = "ExponentPushToken[iKEHQeL_OoGsqWGV5SU-ab]";
+if (!Expo.isExpoPushToken(pushToken)) {
+  console.error(`Push token ${pushToken} is not a valid Expo push token`);
+  return;
+}
+//
+function pushNotification(title, body, data) {
+  const messages = [];
+
+  messages.push({
+    to: pushToken,
+    sound: "default",
+    title,
+    body,
+    data,
+  });
+
+  const chunks = expo.chunkPushNotifications(messages);
+  const tickets = [];
+  (async () => {
+    for (const chunk of chunks) {
+      try {
+        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+        tickets.push(...ticketChunk);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    console.log("Notification sent:", tickets);
+  })();
 }
 
 const authenticate = (req, res, next) => {
@@ -122,6 +158,11 @@ app.get("/alert", authenticate, (req, res) => {
   });
 
   broadcast({ type: "alert", body: currentTime });
+  pushNotification(
+    "Alert",
+    "Door has been opened at " + currentTime.split(" ")[1],
+    { currentTime }
+  );
 });
 
 app.get("/test", (req, res) => {
