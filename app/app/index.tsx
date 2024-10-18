@@ -45,6 +45,20 @@ export default function HomeScreen() {
   }
 
   useEffect(() => {
+    if (expoPushToken === undefined) return;
+
+    (async () => {
+      const resp = await fetch(
+        `http://${IP}:3000/register?user=user&pass=pass&token=${expoPushToken?.data}`,
+      );
+
+      if (resp.status !== 200) {
+        alert(await resp.text());
+      }
+    })();
+  }, [expoPushToken]);
+
+  useEffect(() => {
     (async () => {
       const newLogs = await (
         await fetch(`http://${IP}:3000/?user=user&pass=pass&alertsLimit=5`)

@@ -42,56 +42,45 @@ function broadcast(obj) {
   });
 }
 
-// Expo push notifications
 let expo = new Expo();
-const pushToken = "ExponentPushToken[iKEHQeL_OoGsqWGV5SU-ab]";
-if (!Expo.isExpoPushToken(pushToken)) {
-  console.error(`Push token ${pushToken} is not a valid Expo push token`);
-  return;
-}
 //
-function pushNotification(title, body, data) {
+const getExpoPushTokens = () =>
+  JSON.parse(
+    fs.readFileSync(path.join(__dirname, "expoPushTokens.json"), "utf8")
+  );
+//
+async function pushNotification(title, body, data) {
+  const pushTokens = getExpoPushTokens();
+
   const messages = [];
 
-  messages.push({
-    to: pushToken,
-    sound: "default",
-    title,
-    body,
-    data,
+  pushTokens.forEach((pushToken) => {
+    messages.push({
+      to: pushToken,
+      sound: "default",
+      title,
+      body,
+      data,
+    });
   });
 
   const chunks = expo.chunkPushNotifications(messages);
   const tickets = [];
-  (async () => {
-    for (const chunk of chunks) {
-      try {
-        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-        tickets.push(...ticketChunk);
-      } catch (error) {
-        console.error(error);
-      }
+  for (const chunk of chunks) {
+    try {
+      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+      tickets.push(...ticketChunk);
+    } catch (error) {
+      console.error(error);
     }
-
-    console.log("Notification sent:", tickets);
-  })();
-}
-
-const authenticate = (req, res, next) => {
-  const { user, pass } = req.query;
-
-  if (user === USERNAME && pass === PASSWORD) {
-    return next();
   }
 
-  res.status(403).send("Forbidden: Invalid credentials.");
-};
-
-function parseBooleanQueryParams(req, res, next) {
-  if (req.query.alives) req.query.alives = req.query.alives === "true";
-  if (req.query.alerts) req.query.alerts = req.query.alerts === "true";
-  next();
+  // console.log("Notification(s) sent:", tickets);
 }
+
+app.get("/test", (req, res) => {
+  res.json({ message: "OK" });
+});
 
 app.get("/", authenticate, parseBooleanQueryParams, (req, res) => {
   const {
@@ -145,7 +134,7 @@ app.get("/alive", authenticate, (req, res) => {
 });
 
 // logs the current time to logs/alert.log
-app.get("/alert", authenticate, (req, res) => {
+app.get("/alert", authenticate, async (req, res) => {
   const currentTime = new Date()
     .toLocaleString("pt-br", { timeZone: "America/Sao_Paulo" })
     .replace(",", "");
@@ -158,15 +147,39 @@ app.get("/alert", authenticate, (req, res) => {
   });
 
   broadcast({ type: "alert", body: currentTime });
-  pushNotification(
+  await pushNotification(
     "Alert",
     "Door has been opened at " + currentTime.split(" ")[1],
     { currentTime }
   );
 });
 
-app.get("/test", (req, res) => {
-  res.json({ message: "OK" });
+// register a new device for push notifications
+app.get("/register", (req, res) => {
+  const newPushToken = req.query.token;
+
+  if (!newPushToken) {
+    return res.status(400).send("Missing `token` query parameter");
+  }
+
+  if (!Expo.isExpoPushToken(newPushToken)) {
+    return res.status(400).send(`Push token is not a valid Expo push token`);
+  }
+
+  const pushTokens = getExpoPushTokens();
+
+  if (pushTokens.includes(newPushToken)) {
+    return res.send("Device already registered");
+  }
+
+  pushTokens.push(newPushToken);
+
+  fs.writeFileSync(
+    path.join(__dirname, "expoPushTokens.json"),
+    JSON.stringify(pushTokens, null, 2)
+  );
+
+  return res.send("Device registered successfully");
 });
 
 function getLocalIP() {
@@ -180,4 +193,20 @@ function getLocalIP() {
   }
 
   return "localhost"; // fallback if no IP address is found
+}
+
+function authenticate(req, res, next) {
+  const { user, pass } = req.query;
+
+  if (user === USERNAME && pass === PASSWORD) {
+    return next();
+  }
+
+  res.status(403).send("Forbidden: Invalid credentials.");
+}
+
+function parseBooleanQueryParams(req, res, next) {
+  if (req.query.alives) req.query.alives = req.query.alives === "true";
+  if (req.query.alerts) req.query.alerts = req.query.alerts === "true";
+  next();
 }
