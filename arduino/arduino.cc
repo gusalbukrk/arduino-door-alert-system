@@ -1,8 +1,5 @@
-#include <SPI.h>
 #include <MFRC522.h>
-#include <SPI.h>
 #include <EthernetENC.h>
-#include <Arduino.h>
 #include "Talkie.h"
 #include "Vocab_US_Large.h"
 
@@ -77,8 +74,7 @@ void setup() {
     Serial.print(F("DHCP IP: "));
     Serial.println(Ethernet.localIP());
   }
-  // give the Ethernet a second to initialize
-  delay(1000);
+  delay(1000); // give the Ethernet a second to initialize
 
   httpRequest("alive");
 
@@ -96,13 +92,13 @@ void loop() {
   Serial.println(F("cm"));
 
   if (distance > DISTANCE_THRESHOLD) {
-    for (int countdown = 30; countdown >= 1; countdown--) {
+    for (int countdown = RFID_TIMEOUT; countdown >= 1; countdown--) {
       Serial.print(F("Waiting for RFID card ("));
       Serial.print(countdown);
       Serial.println(F(" seconds left)"));
 
       // increase frequency incrementally to signal urgency
-      tone(buzzer, 100 + 30 * (RFID_TIMEOUT + 1 - countdown), 50);
+      tone(buzzer, 100 + RFID_TIMEOUT * (RFID_TIMEOUT + 1 - countdown), 50);
       delay(100);
       //
       sayNumber(countdown);
