@@ -29,6 +29,16 @@ const wss = new WebSocket.Server({ server });
 wss.on("connection", (ws) => {
   console.log("New client connected");
 
+  ws.on("message", (message) => {
+    console.log(`Received message: '${message}'`);
+
+    if (message.toString() === "alive") {
+      alive();
+    } else if (message.toString() === "alert") {
+      alert();
+    }
+  });
+
   ws.on("close", () => {
     console.log("Client disconnected");
   });
@@ -119,39 +129,16 @@ app.get("/", authenticate, parseBooleanQueryParams, (req, res) => {
 
 // logs the current time to logs/alive.log
 app.get("/alive", authenticate, (req, res) => {
-  const currentTime = new Date()
-    .toLocaleString("pt-br", { timeZone: "America/Sao_Paulo" })
-    .replace(",", "");
-  fs.appendFile(ALIVE_LOG_FILE, `${currentTime}\n`, (err) => {
-    if (err) {
-      console.error("Error writing to log file:", err);
-      return res.status(500).send("Error logging the alive signal");
-    }
-    res.send("Alive signal logged successfully");
-  });
-
-  broadcast({ type: "alive", body: currentTime });
+  return alive()
+    ? res.send("Alive signal logged successfully")
+    : res.status(500).send("Error logging the alive signal");
 });
 
 // logs the current time to logs/alert.log
 app.get("/alert", authenticate, async (req, res) => {
-  const currentTime = new Date()
-    .toLocaleString("pt-br", { timeZone: "America/Sao_Paulo" })
-    .replace(",", "");
-  fs.appendFile(ALERT_LOG_FILE, `${currentTime}\n`, (err) => {
-    if (err) {
-      console.error("Error writing to log file:", err);
-      return res.status(500).send("Error logging the alert");
-    }
-    res.send("Alert logged successfully");
-  });
-
-  broadcast({ type: "alert", body: currentTime });
-  await pushNotification(
-    "Alert",
-    "Door has been opened at " + currentTime.split(" ")[1],
-    { currentTime }
-  );
+  return alert()
+    ? res.send("Alert logged successfully")
+    : res.status(500).send("Error logging the alert");
 });
 
 // register a new device for push notifications
@@ -181,6 +168,46 @@ app.get("/register", (req, res) => {
 
   return res.send("Device registered successfully");
 });
+
+function getCurrentTime() {
+  return new Date()
+    .toLocaleString("pt-br", { timeZone: "America/Sao_Paulo" })
+    .replace(",", "");
+}
+
+function alive() {
+  const currentTime = getCurrentTime();
+
+  fs.appendFile(ALIVE_LOG_FILE, `${currentTime}\n`, (err) => {
+    if (err) {
+      console.error("Error writing to log file:", err);
+      return false;
+    }
+  });
+
+  broadcast({ type: "alive", body: currentTime });
+  return true;
+}
+
+async function alert() {
+  const currentTime = getCurrentTime();
+
+  fs.appendFile(ALERT_LOG_FILE, `${currentTime}\n`, (err) => {
+    if (err) {
+      console.error("Error writing to log file:", err);
+      return false;
+    }
+  });
+
+  broadcast({ type: "alert", body: currentTime });
+  await pushNotification(
+    "Alert",
+    "Door has been opened at " + currentTime.split(" ")[1],
+    { currentTime }
+  );
+
+  return true;
+}
 
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
