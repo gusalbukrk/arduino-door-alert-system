@@ -7,4 +7,4 @@
 - `git clone https://github.com/gusalbukrk/alert-api`
 - `cd alert-api && npm i`
 - `tmux`
-- `npm start` and press `CTRL+B` then `D` to detach from the session
+- `npm run serve` and press `CTRL+B` then `D` to detach from the session
