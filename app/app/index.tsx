@@ -1,19 +1,21 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, TextInput, View, Text } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useEffect, useState } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Collapsible } from '@/components/Collapsible';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
-const IP = '192.168.1.5';
+// const IP = '192.168.1.5';
 
 export default function HomeScreen() {
   const { expoPushToken, notification } = usePushNotifications();
   // console.log('ExpoPushToken', expoPushToken?.data);
   const data = JSON.stringify(notification, undefined, 2);
+
+  const [ip, setIp] = useState<string>('192.168.1.5');
 
   const [logs, setLogs] = useState<{ alives: string[]; alerts: string[] }>({
     alives: [],
@@ -57,28 +59,29 @@ export default function HomeScreen() {
 
     (async () => {
       const resp = await fetch(
-        `http://${IP}:3000/register?user=user&pass=pass&token=${expoPushToken?.data}`,
+        `http://${ip}:3000/register?user=user&pass=pass&token=${expoPushToken?.data}`,
       );
 
       if (resp.status !== 200) {
         alert(await resp.text());
       }
     })();
-  }, [expoPushToken]);
+  }, [expoPushToken, ip]);
 
   useEffect(() => {
     (async () => {
+      console.log('!!!');
       const newLogs = await (
         await fetch(
-          `http://${IP}:3000/?user=user&pass=pass&alivesLimit=1000&alertsLimit=1000`,
+          `http://${ip}:3000/?user=user&pass=pass&alivesLimit=1000&alertsLimit=1000`,
         )
       ).json();
       setLogs(newLogs);
     })();
-  }, []);
+  }, [ip]);
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://${IP}:3000`);
+    const ws = new WebSocket(`ws://${ip}:3000`);
     setWs(ws);
 
     ws.onopen = () => {
@@ -99,7 +102,7 @@ export default function HomeScreen() {
         ws.close();
       }
     };
-  }, []);
+  }, [ip]);
 
   useEffect(() => {
     if (logs.alives.length === 0) return;
@@ -113,6 +116,14 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [logs]);
 
+  const color = useThemeColor({ light: '#fff', dark: '#000' }, 'text');
+  const backgroundColor = useThemeColor(
+    { light: '#000', dark: '#fff' },
+    'text',
+  );
+
+  const [ipTextField, setIpTextField] = useState<string>(ip);
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -124,6 +135,34 @@ export default function HomeScreen() {
         />
       }
     >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 32,
+          columnGap: 16,
+        }}
+      >
+        <ThemedText type="defaultSemiBold" style={{ marginBottom: 4 }}>
+          IP
+        </ThemedText>
+        <TextInput
+          style={{
+            borderWidth: 3,
+            backgroundColor,
+            color,
+            fontWeight: 'bold',
+            paddingVertical: 4,
+            paddingHorizontal: 16,
+            borderRadius: 8,
+            flex: 1,
+          }}
+          onSubmitEditing={(e) => setIp(e.nativeEvent.text)}
+          onChangeText={setIpTextField}
+          value={ipTextField}
+        />
+      </View>
+      <Text style={{ color: backgroundColor }}>{ip}</Text>
       {logs.alives.length !== 0 && secondsSinceLastAlive !== null && (
         <>
           <ThemedView style={[styles.titleContainer, { marginBottom: 0 }]}>
