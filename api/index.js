@@ -14,8 +14,8 @@ app.set("views", path.join(__dirname));
 app.use(cors());
 
 const PORT = 3000;
-const ALERT_LOG_FILE = path.join(__dirname, "logs", "alert.log");
-const ALIVE_LOG_FILE = path.join(__dirname, "logs", "alive.log");
+const ALERT_LOG_FILE = path.join(__dirname, "logs", "alerts.log");
+const ALIVE_LOG_FILE = path.join(__dirname, "logs", "alives.log");
 const USERNAME = "user";
 const PASSWORD = "pass";
 
@@ -108,6 +108,7 @@ app.get("/", authenticate, parseBooleanQueryParams, (req, res) => {
           .trim()
           .split("\n")
           .slice(-alivesLimit)
+          .filter((log) => log !== "")
       : [],
     alerts: alerts
       ? fs
@@ -115,6 +116,7 @@ app.get("/", authenticate, parseBooleanQueryParams, (req, res) => {
           .trim()
           .split("\n")
           .slice(-alertsLimit)
+          .filter((log) => log !== "")
       : [],
   };
 

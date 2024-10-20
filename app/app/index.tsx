@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useEffect, useState } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { Collapsible } from '@/components/Collapsible';
 
 const IP = '192.168.1.5';
 
@@ -18,7 +19,14 @@ export default function HomeScreen() {
     alives: [],
     alerts: [],
   });
+  const [secondsSinceLastAlive, setSecondsSinceLastAlive] = useState<
+    number | null
+  >(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
+
+  // if (logs.alives.length !== 0) {
+  //   console.log(hasNSecondsPassedSince(120, logs.alives.at(-1)!));
+  // }
 
   if (ws !== null) {
     ws.onmessage = (e) => {
@@ -30,14 +38,14 @@ export default function HomeScreen() {
 
       if (log.type === 'alive') {
         const newLogs = {
-          alives: [...logs.alives.slice(1), log.body],
+          alives: [...logs.alives, log.body],
           alerts: logs.alerts,
         };
         setLogs(newLogs);
       } else if (log.type === 'alert') {
         const newLogs = {
           alives: logs.alives,
-          alerts: [...logs.alerts.slice(1), log.body],
+          alerts: [...logs.alerts, log.body],
         };
         setLogs(newLogs);
       }
@@ -61,7 +69,9 @@ export default function HomeScreen() {
   useEffect(() => {
     (async () => {
       const newLogs = await (
-        await fetch(`http://${IP}:3000/?user=user&pass=pass&alertsLimit=5`)
+        await fetch(
+          `http://${IP}:3000/?user=user&pass=pass&alivesLimit=1000&alertsLimit=1000`,
+        )
       ).json();
       setLogs(newLogs);
     })();
@@ -91,6 +101,18 @@ export default function HomeScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    if (logs.alives.length === 0) return;
+
+    const secondsSinceLastAlive = getSecondsSince(logs.alives.at(-1)!);
+    setSecondsSinceLastAlive(secondsSinceLastAlive);
+
+    const interval = setInterval(() => {
+      setSecondsSinceLastAlive(getSecondsSince(logs.alives.at(-1)!));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [logs]);
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -102,29 +124,77 @@ export default function HomeScreen() {
         />
       }
     >
-      <View>
-        <ThemedText>Token: {expoPushToken?.data ?? ''}</ThemedText>
-        <ThemedText>Notification: {data}</ThemedText>
-      </View>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
+      {logs.alives.length !== 0 && secondsSinceLastAlive !== null && (
+        <>
+          <ThemedView style={[styles.titleContainer, { marginBottom: 0 }]}>
+            {secondsSinceLastAlive >= 120 ? (
+              <>
+                <ThemedText type="subtitle">🔴</ThemedText>
+                <ThemedText type="title" style={{ lineHeight: 36 }}>
+                  Down
+                </ThemedText>
+              </>
+            ) : (
+              <>
+                <ThemedText type="subtitle">🟢</ThemedText>
+                <ThemedText type="title">Up</ThemedText>
+              </>
+            )}
+          </ThemedView>
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText type="defaultSemiBold">
+              Last alive signal: {secondsSinceLastAlive} seconds ago
+            </ThemedText>
+          </ThemedView>
+        </>
+      )}
       <ThemedView style={styles.sectionContainer}>
         <ThemedText type="subtitle">Alives</ThemedText>
-        {logs.alives.map((alive, index) => (
-          <ThemedText key={index} style={styles.listItem}>
-            {alive}
-          </ThemedText>
-        ))}
+        {logs.alives.length === 0 && (
+          <ThemedText style={styles.listItem}>No alives</ThemedText>
+        )}
+        {reverse(logs.alives)
+          .slice(0, 5)
+          .map((alive, index) => (
+            <ThemedText key={index} style={styles.listItem}>
+              {alive}
+            </ThemedText>
+          ))}
+        {logs.alives.length > 5 && (
+          <Collapsible title="More" style={{ marginTop: 4 }}>
+            {reverse(logs.alives)
+              .slice(5)
+              .map((alive, index) => (
+                <ThemedText key={index} style={styles.listItem}>
+                  {alive}
+                </ThemedText>
+              ))}
+          </Collapsible>
+        )}
       </ThemedView>
       <ThemedView style={styles.sectionContainer}>
         <ThemedText type="subtitle">Alerts</ThemedText>
-        {logs.alerts.map((alert, index) => (
-          <ThemedText key={index} style={styles.listItem}>
-            {alert}
-          </ThemedText>
-        ))}
+        {logs.alerts.length === 0 && (
+          <ThemedText style={styles.listItem}>No alerts</ThemedText>
+        )}
+        {reverse(logs.alerts)
+          .slice(0, 5)
+          .map((alert, index) => (
+            <ThemedText key={index} style={styles.listItem}>
+              {alert}
+            </ThemedText>
+          ))}
+        {logs.alerts.length > 5 && (
+          <Collapsible title="More" style={{ marginTop: 4 }}>
+            {reverse(logs.alerts)
+              .slice(5)
+              .map((alert, index) => (
+                <ThemedText key={index} style={styles.listItem}>
+                  {alert}
+                </ThemedText>
+              ))}
+          </Collapsible>
+        )}
       </ThemedView>
     </ParallaxScrollView>
   );
@@ -149,3 +219,38 @@ const styles = StyleSheet.create({
     paddingLeft: 24,
   },
 });
+
+function getDate(dateString: string) {
+  const [datePart, timePart] = dateString.split(' ');
+
+  const [day, month, year] = datePart.split('/').map(Number);
+  const [hours, minutes, seconds] = timePart.split(':').map(Number);
+
+  const date = new Date(year, month - 1, day, hours, minutes, seconds);
+
+  return date;
+}
+
+function hasNSecondsPassedSince(seconds: number, dateString: string) {
+  const date = getDate(dateString);
+
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const diffMinutes = Math.floor(diff / 1000);
+
+  return diffMinutes >= seconds;
+}
+
+function getSecondsSince(dateString: string) {
+  const date = getDate(dateString);
+
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diff / 1000);
+
+  return diffSeconds;
+}
+
+function reverse<T>(arr: T[]) {
+  return [...arr].reverse();
+}
