@@ -1,4 +1,5 @@
 import { Image, StyleSheet, TextInput, View, Text } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
@@ -53,6 +54,14 @@ export default function HomeScreen() {
       }
     };
   }
+
+  useEffect(() => {
+    (async () => {
+      const ip = await getIp();
+      setIp(ip ?? '192.168.1.5');
+      setIpTextField(ip ?? '192.168.1.5');
+    })();
+  }, []);
 
   useEffect(() => {
     if (expoPushToken === undefined) return;
@@ -124,6 +133,11 @@ export default function HomeScreen() {
 
   const [ipTextField, setIpTextField] = useState<string>(ip);
 
+  const setAndStoreIp = (value: string) => {
+    setIpTextField(value);
+    storeIp(value);
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -135,6 +149,7 @@ export default function HomeScreen() {
         />
       }
     >
+      <Text style={{ color: backgroundColor }}>Current IP: {ip}</Text>
       <View
         style={{
           flexDirection: 'row',
@@ -158,11 +173,10 @@ export default function HomeScreen() {
             flex: 1,
           }}
           onSubmitEditing={(e) => setIp(e.nativeEvent.text)}
-          onChangeText={setIpTextField}
+          onChangeText={setAndStoreIp}
           value={ipTextField}
         />
       </View>
-      <Text style={{ color: backgroundColor }}>{ip}</Text>
       {logs.alives.length !== 0 && secondsSinceLastAlive !== null && (
         <>
           <ThemedView style={[styles.titleContainer, { marginBottom: 0 }]}>
@@ -292,4 +306,21 @@ function getSecondsSince(dateString: string) {
 
 function reverse<T>(arr: T[]) {
   return [...arr].reverse();
+}
+
+async function storeIp(value: string) {
+  try {
+    await AsyncStorage.setItem('ip', value);
+  } catch (e) {
+    // saving error
+  }
+}
+
+async function getIp() {
+  try {
+    const value = await AsyncStorage.getItem('ip');
+    return value;
+  } catch (e) {
+    // error reading value
+  }
 }
