@@ -40,8 +40,6 @@
         "expo-build-properties",
         {
           "android": {
-            // enable HTTP requests (only HTTPS are allowed by default)
-            // https://stackoverflow.com/a/77906570
             "usesCleartextTraffic": true
           }
         }
@@ -52,7 +50,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "0cddf0db-0854-4f36-b290-fcba2f4c281d"
+        "projectId": "d216eeb1-f948-4ada-9df4-b62c908b94dd"
       }
     }
   }
