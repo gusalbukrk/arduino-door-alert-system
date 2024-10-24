@@ -39,7 +39,7 @@ def play_tone(frequency, duration):
 
 def http_request(endpoint):
     try:
-        url = f"http://192.168.1.5:3000/{endpoint}?user=user&pass=pass"
+        url = f"http://localhost:3000/{endpoint}?user=user&pass=pass"
         response = requests.get(url)
 
         if response.status_code == 200:

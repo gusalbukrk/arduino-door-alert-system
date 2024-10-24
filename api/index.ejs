@@ -55,7 +55,7 @@
         </tr>
       </thead>
       <tbody id="alivesTableBody">
-        <% logs.alives.forEach((entry, index) => { %>
+        <% logs.alives.reverse().forEach((entry, index) => { %>
         <tr>
           <td><%= index + 1 %></td>
           <td><%= entry %></td>
@@ -73,7 +73,7 @@
         </tr>
       </thead>
       <tbody id="alertsTableBody">
-        <% logs.alerts.forEach((entry, index) => { %>
+        <% logs.alerts.reverse().forEach((entry, index) => { %>
         <tr>
           <td><%= index + 1 %></td>
           <td><%= entry %></td>
