@@ -3,10 +3,8 @@
 #include "Talkie.h"
 #include "Vocab_US_Large.h"
 
-// alert will be triggered when distance in cm is higher than this value
-const int DISTANCE_THRESHOLD = 10;
 // time (in seconds) permitted for reading the RFID card to prevent the alert from being triggered
-const int RFID_TIMEOUT = 30;
+const int RFID_TIMEOUT = 15;
 // must send alive signal to the API every ALIVE_TIMEOUT milliseconds
 const int ALIVE_TIMEOUT = 30000;
 
@@ -28,7 +26,7 @@ byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 // use the numeric IP instead of the name for the server:
 //IPAddress server(74,125,232,128);  // numeric IP for Google (no DNS)
 //char server[] = "www.google.com";    // name address for Google (using DNS)
-IPAddress server(192, 168, 1, 5);  // `char server[] = "localhost";` won't work
+IPAddress server(147, 182, 250, 73);  // `char server[] = "localhost";` won't work
 //IPAddress server(146,190,50,117);
 //
 // Set the static IP address to use if the DHCP fails to assign
@@ -40,6 +38,8 @@ EthernetClient client;
 Talkie voice(true, false);
 
 unsigned long lastAliveSignalTime;
+
+int defaultDistance = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -87,15 +87,21 @@ void loop() {
   }
 
   int distance = get_distance();
+
+  if (defaultDistance == 0) {
+    defaultDistance = distance;
+  }
+
   Serial.print(F("Distance: "));
   Serial.print(distance);
   Serial.println(F("cm"));
 
-  if (distance > DISTANCE_THRESHOLD) {
+  // is normal for the distance to vary 1cm
+  if (abs(defaultDistance - distance) > 1) {
     for (int countdown = RFID_TIMEOUT; countdown >= 1; countdown--) {
-      Serial.print(F("Waiting for RFID card ("));
+      Serial.print(F("Waiting RFID ("));
       Serial.print(countdown);
-      Serial.println(F(" seconds left)"));
+      Serial.println(F("s left)"));
 
       // increase frequency incrementally to signal urgency
       tone(buzzer, 100 + RFID_TIMEOUT * (RFID_TIMEOUT + 1 - countdown), 50);
@@ -114,17 +120,12 @@ void loop() {
         } else {
           Serial.println(F("Wrong"));
           failureTone();
-          delay(1000);
+          break;
         }
       }
     }
 
     httpRequest("alert");
-
-    while (get_distance() > DISTANCE_THRESHOLD) {
-      Serial.println(F("Waiting for door to get closed"));
-      delay(1000);
-    }
   }
 
   delay(100);
